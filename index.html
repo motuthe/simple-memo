@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>シンプルメモ</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect x=%2210%22 y=%2210%22 width=%2280%22 height=%2280%22 rx=%2212%22 fill=%22%231a1a1a%22/><rect x=%2225%22 y=%2230%22 width=%2250%22 height=%224%22 fill=%22white%22/><rect x=%2225%22 y=%2248%22 width=%2250%22 height=%224%22 fill=%22white%22/><rect x=%2225%22 y=%2266%22 width=%2250%22 height=%224%22 fill=%22white%22/></svg>">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+      font-size: 14px;
+      color: #1a1a1a;
+      background: #fafaf7;
+    }
+
+    #app {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 12px;
+      height: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    #sidebar {
+      background: #f1efe8;
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    #memo-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .memo-item {
+      text-align: left;
+      padding: 8px 10px;
+      border: 0.5px solid transparent;
+      background: transparent;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: #1a1a1a;
+      font-family: inherit;
+    }
+
+    .memo-item:hover {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .memo-item.active {
+      background: #ffffff;
+      border-color: rgba(0, 0, 0, 0.15);
+      font-weight: 500;
+    }
+
+    #main {
+      background: #ffffff;
+      border: 0.5px solid rgba(0, 0, 0, 0.12);
+      border-radius: 10px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .header {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    #title-input {
+      flex: 1;
+      font-size: 18px;
+      font-weight: 500;
+      padding: 8px 12px;
+      border: 0.5px solid rgba(0, 0, 0, 0.15);
+      border-radius: 6px;
+      font-family: inherit;
+      outline: none;
+      color: #1a1a1a;
+      background: #ffffff;
+    }
+
+    #title-input:focus {
+      border-color: rgba(0, 0, 0, 0.4);
+    }
+
+    button {
+      cursor: pointer;
+      padding: 6px 12px;
+      border: 0.5px solid rgba(0, 0, 0, 0.15);
+      border-radius: 6px;
+      background: #ffffff;
+      font-family: inherit;
+      font-size: 13px;
+      color: #1a1a1a;
+      transition: background 0.1s;
+    }
+
+    button:hover {
+      background: #f5f5f5;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    .primary-btn {
+      width: 100%;
+      background: #1a1a1a;
+      color: #ffffff;
+      border-color: #1a1a1a;
+    }
+
+    .primary-btn:hover {
+      background: #333333;
+    }
+
+    .danger-btn {
+      color: #a32d2d;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      border-bottom: 0.5px solid rgba(0, 0, 0, 0.12);
+      align-items: center;
+    }
+
+    .tab {
+      border: none;
+      border-bottom: 2px solid transparent;
+      border-radius: 0;
+      background: transparent;
+      color: #666;
+      padding: 6px 10px;
+    }
+
+    .tab:hover {
+      background: transparent;
+      color: #1a1a1a;
+    }
+
+    .tab.active {
+      color: #1a1a1a;
+      border-bottom-color: #1a1a1a;
+    }
+
+    #status {
+      margin-left: auto;
+      font-size: 11px;
+      color: #999;
+    }
+
+    #body-input {
+      flex: 1;
+      width: 100%;
+      resize: none;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 14px;
+      line-height: 1.7;
+      padding: 14px;
+      border: 0.5px solid rgba(0, 0, 0, 0.15);
+      border-radius: 6px;
+      outline: none;
+      color: #1a1a1a;
+      background: #ffffff;
+    }
+
+    #body-input:focus {
+      border-color: rgba(0, 0, 0, 0.4);
+    }
+
+    #preview {
+      display: none;
+      flex: 1;
+      padding: 14px;
+      background: #f5f5f0;
+      border-radius: 6px;
+      font-size: 14px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      overflow-y: auto;
+    }
+
+    #preview a {
+      color: #185fa5;
+      text-decoration: underline;
+    }
+
+    #preview a:hover {
+      color: #0c447c;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <aside id="sidebar">
+      <button id="new-btn" class="primary-btn">+ 新規メモ</button>
+      <div id="memo-list"></div>
+    </aside>
+
+    <main id="main">
+      <div class="header">
+        <input id="title-input" type="text" placeholder="タイトル" />
+        <button id="delete-btn" class="danger-btn">削除</button>
+      </div>
+
+      <div class="tabs">
+        <button id="tab-edit" class="tab active" data-tab="edit">編集</button>
+        <button id="tab-preview" class="tab" data-tab="preview">プレビュー</button>
+        <span id="status"></span>
+      </div>
+
+      <textarea id="body-input" placeholder="本文を入力... URLは自動でリンクになります (https://example.com)"></textarea>
+      <div id="preview"></div>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      const STORAGE_KEY = 'simple-memo-v1';
+      let memos = [];
+      let activeId = null;
+      let saveTimer = null;
+
+      const $list = document.getElementById('memo-list');
+      const $title = document.getElementById('title-input');
+      const $body = document.getElementById('body-input');
+      const $preview = document.getElementById('preview');
+      const $status = document.getElementById('status');
+      const $tabEdit = document.getElementById('tab-edit');
+      const $tabPreview = document.getElementById('tab-preview');
+      const $newBtn = document.getElementById('new-btn');
+      const $deleteBtn = document.getElementById('delete-btn');
+
+      function uid() {
+        return 'm_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      }
+
+      function escapeHtml(s) {
+        return s.replace(/[&<>"']/g, c => ({
+          '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[c]));
+      }
+
+      function linkify(text) {
+        const escaped = escapeHtml(text);
+        const urlRe = /(https?:\/\/[^\s<]+[^\s<.,;:!?)\]'"])/g;
+        return escaped.replace(urlRe, url =>
+          `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`
+        );
+      }
+
+      function loadAll() {
+        try {
+          const stored = localStorage.getItem(STORAGE_KEY);
+          if (stored) memos = JSON.parse(stored);
+        } catch (e) {
+          memos = [];
+        }
+        if (!memos.length) {
+          memos = [{
+            id: uid(),
+            title: 'はじめてのメモ',
+            body: 'ようこそ!\n\nここにメモを書けます。URLは自動でリンクになります:\nhttps://www.google.com\n\n左の「+ 新規メモ」で増やせます。\n\nこのページをブックマークしておくといつでも開けます。',
+            updatedAt: Date.now()
+          }];
+          saveAll();
+        }
+        activeId = memos[0].id;
+        renderList();
+        renderActive();
+      }
+
+      function saveAll() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(memos));
+          $status.textContent = '保存済み';
+          setTimeout(() => { $status.textContent = ''; }, 1500);
+        } catch (e) {
+          $status.textContent = '保存に失敗 (容量超過の可能性)';
+        }
+      }
+
+      function scheduleSave() {
+        clearTimeout(saveTimer);
+        $status.textContent = '保存中...';
+        saveTimer = setTimeout(saveAll, 400);
+      }
+
+      function renderList() {
+        memos.sort((a, b) => b.updatedAt - a.updatedAt);
+        $list.innerHTML = '';
+        memos.forEach(m => {
+          const btn = document.createElement('button');
+          btn.className = 'memo-item' + (m.id === activeId ? ' active' : '');
+          btn.textContent = m.title || '(無題)';
+          btn.onclick = () => {
+            activeId = m.id;
+            renderList();
+            renderActive();
+          };
+          $list.appendChild(btn);
+        });
+      }
+
+      function renderActive() {
+        const m = memos.find(x => x.id === activeId);
+        if (!m) return;
+        $title.value = m.title;
+        $body.value = m.body;
+        updatePreview();
+      }
+
+      function updatePreview() {
+        $preview.innerHTML = linkify($body.value || '(本文なし)');
+      }
+
+      function update(field, value) {
+        const m = memos.find(x => x.id === activeId);
+        if (!m) return;
+        m[field] = value;
+        m.updatedAt = Date.now();
+        if (field === 'body') updatePreview();
+        if (field === 'title') renderList();
+        scheduleSave();
+      }
+
+      $title.addEventListener('input', e => update('title', e.target.value));
+      $body.addEventListener('input', e => update('body', e.target.value));
+
+      $newBtn.addEventListener('click', () => {
+        const m = { id: uid(), title: '新しいメモ', body: '', updatedAt: Date.now() };
+        memos.unshift(m);
+        activeId = m.id;
+        renderList();
+        renderActive();
+        $title.focus();
+        $title.select();
+        saveAll();
+      });
+
+      $deleteBtn.addEventListener('click', () => {
+        if (!confirm('このメモを削除しますか?')) return;
+        if (memos.length <= 1) {
+          const m = memos[0];
+          m.title = '新しいメモ';
+          m.body = '';
+          m.updatedAt = Date.now();
+          renderList();
+          renderActive();
+          saveAll();
+          return;
+        }
+        memos = memos.filter(x => x.id !== activeId);
+        activeId = memos[0].id;
+        renderList();
+        renderActive();
+        saveAll();
+      });
+
+      function setTab(tab) {
+        if (tab === 'edit') {
+          $body.style.display = '';
+          $preview.style.display = 'none';
+          $tabEdit.classList.add('active');
+          $tabPreview.classList.remove('active');
+        } else {
+          updatePreview();
+          $body.style.display = 'none';
+          $preview.style.display = 'block';
+          $tabPreview.classList.add('active');
+          $tabEdit.classList.remove('active');
+        }
+      }
+      $tabEdit.addEventListener('click', () => setTab('edit'));
+      $tabPreview.addEventListener('click', () => setTab('preview'));
+
+      loadAll();
+    })();
+  </script>
+</body>
+</html>
